@@ -53,32 +53,34 @@ function readManifest() {
   return fs.readFileSync(PLACEHOLDER_MANIFEST_PATH, "utf-8");
 }
 
-// ============================================================
-// YOUR JOB — write the prompt
-//
-// This is the only part you need to write. Everything else below
-// (calling the API, handling errors, parsing the result) is already
-// wired up and working.
-//
-// Write a prompt that asks Claude to compare the diff against the
-// manifest and decide pass/fail. Things worth including:
-//   - Reference the manifest explicitly, don't just say "the design system"
-//   - Say what counts as an issue (off-system components, hardcoded
-//     colors, arbitrary spacing, deprecated variants)
-//   - Ask for structured reasoning, not just a verdict
-//
-// IMPORTANT: whatever you ask for, it must come back as valid JSON in
-// exactly this shape, because that's what the code below expects:
-//   {
-//     "pass": true or false,
-//     "findings": [
-//       { "file": "...", "line": "...", "issue": "...", "reasoning": "..." }
-//     ]
-//   }
-// If there are no issues, "pass" should be true and "findings" empty.
-// ============================================================
+
 function buildPrompt(diff, manifest) {
-  return `TODO: write your prompt here.
+  return `You are a design system QA reviewer. Your job is to check a pull request diff against the design system manifest below and report every place where the diff breaks the manifest.
+
+The manifest is the only source of truth. Base every check on what it actually says:
+- "components": only the listed components, imports, approvedVariants, approvedSizes and subcomponents are approved. Any variant listed under "deprecatedVariants" must be flagged, and the replacement the manifest names should be suggested.
+- Tokens: color tokens and the "spacingScale" values are the approved tokens. Flag values the manifest says not to use instead of tokens.
+- "rules": check every general rule.
+- "accessibilityRules": check every accessibility rule.
+- "responsiveRules": check every responsive rule.
+Do not invent rules, best practices or preferences that are not written in the manifest. If something isn't covered by the manifest, don't flag it.
+
+Scope:
+- Only flag lines the diff adds (lines starting with "+", not "+++"). Do not flag removed lines, unchanged context lines, or code that isn't in the diff.
+- Report each distinct issue once.
+
+For each finding, include:
+- "file": the file path from the diff
+- "line": the offending line or a short snippet from it
+- "issue": a short description of the problem
+- "reasoning": why it breaks the manifest, quoting or naming the specific manifest rule, component entry or deprecatedVariants entry
+
+Respond ONLY with valid JSON in exactly this shape. No other text, no markdown, no code fences:
+{ "pass": true or false,
+  "findings": [ { "file": "...", "line": "...",
+  "issue": "...", "reasoning": "..." } ] }
+
+If there are no issues, return "pass": true and an empty findings array. If there are any findings, "pass" must be false.
 
 Manifest:
 ${manifest}
